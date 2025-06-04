@@ -1,22 +1,16 @@
-import asyncio
-import random
 import logging
+import random
 import time
 from datetime import datetime, time
 import os
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
+from telegram.ext import Application, CommandHandler
+from telegram.error import BadRequest, Forbidden
 
 # Configure logging to use UTC time
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-formatter.converter = time.gmtime  # Use UTC time
-
-# Create a console handler
+formatter.converter = time.gmtime
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
-
-# Set up the root logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.addHandler(handler)
@@ -25,13 +19,9 @@ logger.addHandler(handler)
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 CHAT_ID = os.environ.get('CHAT_ID')
 
-# Check if environment variables are set
 if not BOT_TOKEN or not CHAT_ID:
     logging.error("BOT_TOKEN or CHAT_ID environment variables are not set.")
     exit(1)
-
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()
 
 # List of 4 different messages
 MESSAGES = [
@@ -57,47 +47,46 @@ last_sent_dates = {target: None for target in target_times}
 def seconds_since_midnight(t):
     return t.hour * 3600 + t.minute * 60 + t.second
 
-# Function to send messages at scheduled times
-async def send_scheduled_message():
-    while True:
-        now = datetime.utcnow()
-        current_date = now.date()
-        current_time = now.time()
-        current_seconds = seconds_since_midnight(current_time)
+# Function to send scheduled messages
+def send_scheduled_message(context):
+    now = datetime.utcnow()
+    current_date = now.date()
+    current_time = now.time()
+    current_seconds = seconds_since_midnight(current_time)
 
-        for target in target_times:
-            target_seconds = seconds_since_midnight(target)
-            time_diff = abs(current_seconds - target_seconds)
-            if time_diff < 60 and (last_sent_dates[target] is None or last_sent_dates[target] < current_date):
-                current_time_str = now.strftime("%H:%M:%S")
-                message = random.choice(MESSAGES)
-                full_message = f"[{current_time_str} UTC] {message}"
-                try:
-                    await bot.send_message(chat_id=CHAT_ID, text=full_message)
-                    logging.info(f"Message sent at {current_time_str} UTC: {full_message}")
-                    last_sent_dates[target] = current_date
-                except TelegramBadRequest as e:
-                    logging.error(f"Bad request error: {e}")
-                except TelegramForbiddenError as e:
-                    logging.error(f"Forbidden error: {e}. Check bot permissions.")
-                except Exception as e:
-                    logging.error(f"Unexpected error: {e}")
-                await asyncio.sleep(60)  # Wait to avoid multiple sends
-
-        await asyncio.sleep(30)  # Check every 30 seconds
+    for target in target_times:
+        target_seconds = seconds_since_midnight(target)
+        time_diff = abs(current_seconds - target_seconds)
+        if time_diff < 60 and (last_sent_dates[target] is None or last_sent_dates[target] < current_date):
+            current_time_str = now.strftime("%H:%M:%S")
+            message = random.choice(MESSAGES)
+            full_message = f"[{current_time_str} UTC] {message}"
+            try:
+                context.bot.send_message(chat_id=CHAT_ID, text=full_message)
+                logging.info(f"Message sent at {current_time_str} UTC: {full_message}")
+                last_sent_dates[target] = current_date
+            except BadRequest as e:
+                logging.error(f"Bad request error: {e}")
+            except Forbidden as e:
+                logging.error(f"Forbidden error: {e}. Check bot permissions.")
+            except Exception as e:
+                logging.error(f"Unexpected error: {e}")
 
 # Handler for /start command
-@dp.message(Command('start'))
-async def start_command(message: types.Message):
-    await message.reply("Bot is running and will send messages at scheduled times.")
+def start(update, context):
+    update.message.reply_text("Bot is running and will send messages at scheduled times.")
 
-# Main execution
-async def main():
-    logging.info("Starting scheduled message task")
-    asyncio.create_task(send_scheduled_message())
+def main():
+    logging.info("Bot is starting")
+    # Initialize the Application
+    application = Application.builder().token(BOT_TOKEN).build()
+    # Add command handler
+    application.add_handler(CommandHandler("start", start))
+    # Schedule the message sender to run every 30 seconds
+    application.job_queue.run_repeating(send_scheduled_message, interval=30, first=0)
+    # Start polling
     logging.info("Starting bot polling")
-    await dp.start_polling(bot)
+    application.run_polling()
 
 if __name__ == '__main__':
-    logging.info("Bot is starting")
-    asyncio.run(main())
+    main()
