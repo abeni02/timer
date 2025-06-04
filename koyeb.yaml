@@ -1,7 +1,7 @@
 services:
 - name: telegram-bot
   git:
-    repository: your-repo-url
+    repository: https://github.com/abeni02/timer.git
     branch: main
   type: worker
   build:
