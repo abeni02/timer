@@ -1,0 +1,10 @@
+services:
+  - name: telegram-bot
+    type: worker
+    build:
+      type: git
+      builder: heroku/buildpacks:20
+      run: python Main.py
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN}
+      CHAT_ID: ${CHAT_ID}
