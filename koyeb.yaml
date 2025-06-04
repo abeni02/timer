@@ -1,10 +1,13 @@
 services:
-  - name: telegram-bot
-    type: worker
-    build:
-      type: git
-      builder: heroku/buildpacks:20
-      run: python Main.py
-    environment:
-      BOT_TOKEN: ${BOT_TOKEN}
-      CHAT_ID: ${CHAT_ID}
+- name: telegram-bot
+  git:
+    repository: your-repo-url
+    branch: main
+  type: worker
+  build:
+    command: pip install -r requirements.txt
+  run:
+    command: python Bot.py
+  environment:
+    BOT_TOKEN: 7840823330:AAE8tdaNNRm-lrKgH6tbseK5S1b3SvJQld0
+    CHAT_ID: -1002621381308
