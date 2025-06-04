@@ -5,7 +5,7 @@ import time
 from datetime import datetime, time
 import os
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command, F
+from aiogram.filters import Command
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 
 # Configure logging to use UTC time
@@ -29,9 +29,6 @@ CHAT_ID = os.environ.get('CHAT_ID')
 if not BOT_TOKEN or not CHAT_ID:
     logging.error("BOT_TOKEN or CHAT_ID environment variables are not set.")
     exit(1)
-
-# Replace with a valid sticker file_id (obtained via the sticker handler)
-STICKER_ID = 'CAACAgIAAxkBAAIBB2cF5x1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'  # Placeholder; update with actual file_id
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -60,7 +57,7 @@ last_sent_dates = {target: None for target in target_times}
 def seconds_since_midnight(t):
     return t.hour * 3600 + t.minute * 60 + t.second
 
-# Function to send stickers and messages at scheduled times
+# Function to send messages at scheduled times
 async def send_scheduled_message():
     while True:
         now = datetime.utcnow()
@@ -76,14 +73,11 @@ async def send_scheduled_message():
                 message = random.choice(MESSAGES)
                 full_message = f"[{current_time_str} UTC] {message}"
                 try:
-                    await bot.send_sticker(chat_id=CHAT_ID, sticker=STICKER_ID)
                     await bot.send_message(chat_id=CHAT_ID, text=full_message)
-                    logging.info(f"Sticker and message sent at {current_time_str} UTC: {full_message}")
+                    logging.info(f"Message sent at {current_time_str} UTC: {full_message}")
                     last_sent_dates[target] = current_date
                 except TelegramBadRequest as e:
                     logging.error(f"Bad request error: {e}")
-                    if "wrong remote file identifier" in str(e).lower():
-                        logging.error("Invalid STICKER_ID. Send a sticker to the bot to get a valid file_id.")
                 except TelegramForbiddenError as e:
                     logging.error(f"Forbidden error: {e}. Check bot permissions.")
                 except Exception as e:
@@ -95,14 +89,7 @@ async def send_scheduled_message():
 # Handler for /start command
 @dp.message(Command('start'))
 async def start_command(message: types.Message):
-    await message.reply("Bot is running and will send stickers and messages at scheduled times.")
-
-# Handler to capture sticker file_id
-@dp.message(F.sticker)
-async def sticker_handler(message: types.Message):
-    sticker_id = message.sticker.file_id
-    await message.reply(f"Sticker ID: {sticker_id}")
-    logging.info(f"Received sticker with file_id: {sticker_id}")
+    await message.reply("Bot is running and will send messages at scheduled times.")
 
 # Main execution
 async def main():
