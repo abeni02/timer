@@ -3,6 +3,7 @@ import random
 import logging
 import time
 from datetime import datetime, time
+import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command, F
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
@@ -20,9 +21,14 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.addHandler(handler)
 
-# Bot token and chat ID
-BOT_TOKEN = '7840823330:AAE8tdaNNRm-lrKgH6tbseK5S1b3SvJQld0'  # Your bot token
-CHAT_ID = '-1002621381308'  # Your private group chat ID
+# Get bot token and chat ID from environment variables
+BOT_TOKEN = os.environ.get('BOT_TOKEN')
+CHAT_ID = os.environ.get('CHAT_ID')
+
+# Check if environment variables are set
+if not BOT_TOKEN or not CHAT_ID:
+    logging.error("BOT_TOKEN or CHAT_ID environment variables are not set.")
+    exit(1)
 
 # Replace with a valid sticker file_id (obtained via the sticker handler)
 STICKER_ID = 'CAACAgIAAxkBAAIBB2cF5x1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'  # Placeholder; update with actual file_id
