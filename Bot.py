@@ -1,92 +1,60 @@
-import logging
-import random
+import telegram
+import schedule
 import time
-from datetime import datetime, time
-import os
-from telegram.ext import Application, CommandHandler
-from telegram.error import BadRequest, Forbidden
+from datetime import datetime
+import logging
 
-# Configure logging to use UTC time
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-formatter.converter = time.gmtime
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-logger.addHandler(handler)
+# Configure logging to track bot activity and errors
+logging.basicConfig(filename='bot.log', level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Get bot token and chat ID from environment variables
-BOT_TOKEN = os.environ.get('BOT_TOKEN')
-CHAT_ID = os.environ.get('CHAT_ID')
+# Replace these placeholders with your actual values
+API_TOKEN = "your_api_token_here"  # Your Telegram bot's API token
+bot = telegram.Bot(token=API_TOKEN)
+group_chat_id = "your_group_chat_id_here"  # Your Telegram group chat ID
 
-if not BOT_TOKEN or not CHAT_ID:
-    logging.error("BOT_TOKEN or CHAT_ID environment variables are not set.")
-    exit(1)
-
-# List of 4 different messages
-MESSAGES = [
-    "Hey team, time for a quick sync! What's the latest?",
-    "It's time to check in! Any updates to share?",
-    "Hello everyone, let's touch base! What's on your mind?",
-    "Time for our daily catch-up! What's new with you all?"
+# Define the times and corresponding stickers
+schedule_times = ["13:00", "14:00", "15:00", "16:00", "17:00"]
+time_strs = ["1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"]
+stickers = [
+    "your_sticker_file_id_for_1pm_here",
+    "your_sticker_file_id_for_2pm_here",
+    "your_sticker_file_id_for_3pm_here",
+    "your_sticker_file_id_for_4pm_here",
+    "your_sticker_file_id_for_5pm_here"
 ]
 
-# Define target times in UTC
-target_times = [
-    time(9, 21),   # 12:21 PM EAT = 9:21 AM UTC
-    time(8, 17),   # 11:17 AM EAT = 8:17 AM UTC
-    time(8, 18),   # 11:18 AM EAT = 8:18 AM UTC
-    time(8, 19),   # 11:19 AM EAT = 8:19 AM UTC
-    time(11, 30)   # 2:30 PM EAT = 11:30 AM UTC (for testing)
-]
+# Function to send a message and sticker at specified times
+def send_message(time_str, sticker_file_id):
+    try:
+        bot.send_message(chat_id=group_chat_id, text=f"It's {time_str}")
+        logging.info(f"Sent message: It's {time_str}")
+        bot.send_sticker(chat_id=group_chat_id, sticker=sticker_file_id)
+        logging.info(f"Sent sticker: {sticker_file_id}")
+    except Exception as e:
+        logging.error(f"Error in send_message: {str(e)}")
 
-# Track last sent dates for each target time
-last_sent_dates = {target: None for target in target_times}
+# Function to send the current server time every minute
+def send_server_time():
+    try:
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        bot.send_message(chat_id=group_chat_id, text=f"Server time: {current_time}")
+        logging.info(f"Sent server time: {current_time}")
+    except Exception as e:
+        logging.error(f"Error in send_server_time: {str(e)}")
 
-# Function to calculate seconds since midnight
-def seconds_since_midnight(t):
-    return t.hour * 3600 + t.minute * 60 + t.second
+# Schedule messages at specified times with corresponding stickers
+for sch_time, time_str, sticker in zip(schedule_times, time_strs, stickers):
+    schedule.every().day.at(sch_time).do(send_message, time_str, sticker)
 
-# Function to send scheduled messages
-def send_scheduled_message(context):
-    now = datetime.utcnow()
-    current_date = now.date()
-    current_time = now.time()
-    current_seconds = seconds_since_midnight(current_time)
+# Schedule server time every minute
+schedule.every(1).minutes.do(send_server_time)
 
-    for target in target_times:
-        target_seconds = seconds_since_midnight(target)
-        time_diff = abs(current_seconds - target_seconds)
-        if time_diff < 60 and (last_sent_dates[target] is None or last_sent_dates[target] < current_date):
-            current_time_str = now.strftime("%H:%M:%S")
-            message = random.choice(MESSAGES)
-            full_message = f"[{current_time_str} UTC] {message}"
-            try:
-                context.bot.send_message(chat_id=CHAT_ID, text=full_message)
-                logging.info(f"Message sent at {current_time_str} UTC: {full_message}")
-                last_sent_dates[target] = current_date
-            except BadRequest as e:
-                logging.error(f"Bad request error: {e}")
-            except Forbidden as e:
-                logging.error(f"Forbidden error: {e}. Check bot permissions.")
-            except Exception as e:
-                logging.error(f"Unexpected error: {e}")
-
-# Handler for /start command
-def start(update, context):
-    update.message.reply_text("Bot is running and will send messages at scheduled times.")
-
-def main():
-    logging.info("Bot is starting")
-    # Initialize the Application
-    application = Application.builder().token(BOT_TOKEN).build()
-    # Add command handler
-    application.add_handler(CommandHandler("start", start))
-    # Schedule the message sender to run every 30 seconds
-    application.job_queue.run_repeating(send_scheduled_message, interval=30, first=0)
-    # Start polling
-    logging.info("Starting bot polling")
-    application.run_polling()
-
-if __name__ == '__main__':
-    main()
+# Keep the script running to execute scheduled tasks
+while True:
+    try:
+        schedule.run_pending()
+        time.sleep(1)
+    except Exception as e:
+        logging.error(f"Error in main loop: {str(e)}")
+        time.sleep(1)  # Prevent tight loop on failure
