@@ -9,9 +9,9 @@ logging.basicConfig(filename='bot.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Replace these placeholders with your actual values
-API_TOKEN = "your_api_token_here"  # Your Telegram bot's API token
+API_TOKEN = "7840823330:AAE8tdaNNRm-lrKgH6tbseK5S1b3SvJQld0"  # Your Telegram bot's API token
 bot = telegram.Bot(token=API_TOKEN)
-group_chat_id = "your_group_chat_id_here"  # Your Telegram group chat ID
+group_chat_id = "-1002621381308"  # Your Telegram group chat ID
 
 # Define the times and corresponding stickers
 schedule_times = ["13:00", "14:00", "15:00", "16:00", "17:00"]
