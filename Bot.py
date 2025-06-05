@@ -17,11 +17,11 @@ group_chat_id = "your_group_chat_id_here"  # Your Telegram group chat ID
 schedule_times = ["13:00", "14:00", "15:00", "16:00", "17:00"]
 time_strs = ["1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"]
 stickers = [
-    "your_sticker_file_id_for_1pm_here",
-    "your_sticker_file_id_for_2pm_here",
-    "your_sticker_file_id_for_3pm_here",
-    "your_sticker_file_id_for_4pm_here",
-    "your_sticker_file_id_for_5pm_here"
+    "AAMCBQADGQEAATX4LmhBi6HI38gfxgvirSsB1zBxBkgMAALCBAACDziZV7tOfQfd_g3NAQAHbQADNgQ",
+    "AAMCBQADGQEAATX4MmhBi7gT5uHYCjpoOdDCGDRzTW5zAAJ1BwAC1I6YV-cenhZ8_IX7AQAHbQADNgQ",
+    "AAMCBQADGQEAATX4PGhBi-I36ExMXphcyO_6KxU33vV_AAK7BAACKEyRV7KSqggTKA7zAQAHbQADNgQ",
+    "AAMCBQADGQEAATX4QGhBi_3k74-8X0DXaQPh6fKtXsC_AAIWBQACAW-YVwIlsmmYzIcWAQAHbQADNgQ",
+    "AAMCBQADGQEAATX4QmhBjCRvIHxDUjP6LYksV3dOQX8ZAAKrBQACTDWQV6HZhG2dpSWFAQAHbQADNgQ"
 ]
 
 # Function to send a message and sticker at specified times
