@@ -4,3 +4,4 @@ pytz==2023.3
 gunicorn==22.0.0  # Optional, for running Flask on Heroku
 flask==3.0.3
 requests==2.31.0
+aiohttp==3.9.5
