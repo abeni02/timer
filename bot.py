@@ -21,7 +21,7 @@ if not CHAT_ID:
     raise ValueError("No TELEGRAM_CHAT_ID found in environment variables. Please set it securely.")
 
 bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()
+dp = Dispatcher(bot)
 
 # List of 4 different messages
 MESSAGES = [
@@ -55,7 +55,7 @@ async def send_scheduled_content():
             target_datetime = datetime.combine(now.date(), target_time, tzinfo=tz)
             # Calculate time difference in seconds
             time_diff = abs((now - target_datetime).total_seconds())
-            if time_d⁶7iff < 60:  # Within a 1-minute window
+            if time_diff < 60:  # Within a 1-minute window
                 if task['type'] == 'message':
                     message = random.choice(MESSAGES)
                     full_message = f"[{now.strftime('%H:%M:%S')} EAT] {message}"
@@ -77,18 +77,13 @@ async def send_scheduled_content():
         await asyncio.sleep(30)
 
 # Handler for /start command to confirm bot is running
-@dp.message(commands=['start'])
+@dp.message_handler(commands=['start'])
 async def start_command(message: types.Message):
     await message.reply(
         "Bot is running and will send messages to the private group at 1:00 PM, 2:00 PM, 3:00 PM, and 4:00 PM EAT, "
         "and stickers at 10:00 AM, 12:00 PM, 5:00 PM, and 7:00 PM EAT daily.")
 
 # Main execution
-async def main():
-    # Start the scheduled content task
-    asyncio.create_task(send_scheduled_content())
-    # Start polling
-    await dp.start_polling(bot)
-
 if __name__ == '__main__':
-    asyncio.run(main())
+    asyncio.ensure_future(send_scheduled_content())
+    dp.start_polling()
