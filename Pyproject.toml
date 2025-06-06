@@ -1,9 +1,8 @@
 [tool.poetry]
 name = "telegram-bot"
 version = "0.1.0"
-description = "A Telegram bot with scheduled messages"
+description = "A Telegram bot project"
 authors = ["Your Name <your.email@example.com>"]
-license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.11"
