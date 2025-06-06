@@ -1,135 +1,94 @@
-import os
-import logging
-from datetime import datetime
 import asyncio
-from aiogram import Bot, Dispatcher, Router
-from aiogram.exceptions import TelegramUnauthorizedError, TelegramBadRequest, TelegramNetworkError
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from dotenv import load_dotenv
+import random
+from datetime import datetime, time
+from aiogram import Bot, Dispatcher, types
+import os
+import pytz
+import logging
 
-# Load environment variables from .env file
-load_dotenv()
-BOT_TOKEN = os.getenv('BOT_TOKEN')
-TARGET_GROUP_ID = os.getenv('TARGET_GROUP_ID')
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Initialize bot with your token and group chat ID from environment variables
+BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 # Validate environment variables
 if not BOT_TOKEN:
-    raise ValueError("BOT_TOKEN is not set in the .env file")
-if not TARGET_GROUP_ID:
-    raise ValueError("TARGET_GROUP_ID is not set in the .env file")
-try:
-    TARGET_GROUP_ID = int(TARGET_GROUP_ID)
-except ValueError:
-    raise ValueError("TARGET_GROUP_ID must be an integer")
+    raise ValueError("No TELEGRAM_BOT_TOKEN found in environment variables. Please set it securely.")
+if not CHAT_ID:
+    raise ValueError("No TELEGRAM_CHAT_ID found in environment variables. Please set it securely.")
 
-# Debug: Log loaded environment variables
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-logger.info(f"Loaded BOT_TOKEN: {BOT_TOKEN}")
-logger.info(f"Loaded TARGET_GROUP_ID: {TARGET_GROUP_ID}")
-
-# Define sticker IDs for each time slot
-# IMPORTANT: Replace placeholders with actual sticker file IDs from @GetIDsBot
-sticker_ids = {
-    '13:00': 'AAMCBQADGQEAATX4LmhBi6HI38gfxgvirSsB1zBxBkgMAALCBAACDziZV7tOfQfd_g3NAQAHbQADNgQ',  # e.g., 'CAACAgIAAxkBAAIB...'
-    '14:00': 'AAMCBQADGQEAATX4MmhBi7gT5uHYCjpoOdDCGDRzTW5zAAJ1BwAC1I6YV-cenhZ8_IX7AQAHbQADNgQ',
-    '15:00': 'AAMCBQADGQEAATX4PGhBi-I36ExMXphcyO_6KxU33vV_AAK7BAACKEyRV7KSqggTKA7zAQAHbQADNgQ',
-    '16:00': 'AAMCBQADGQEAATX4QGhBi_3k74-8X0DXaQPh6fKtXsC_AAIWBQACAW-YVwIlsmmYzIcWAQAHbQADNgQ',
-    '17:00': 'AAMCBQADGQEAATX4QmhBjCRvIHxDUjP6LYksV3dOQX8ZAAKrBQACTDWQV6HZhG2dpSWFAQAHbQADNgQ',
-}
-
-# Define scheduled times in EAT (24-hour format)
-scheduled_times = ['13:00', '14:00', '15:00', '16:00', '17:00']
-
-# Initialize bot and dispatcher
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# Add handler to ignore unhandled updates
-router = Router()
-dp.include_router(router)
+# List of 4 different messages
+MESSAGES = [
+    "Hey team, time for a quick sync! What's the latest?",
+    "It's time to check in! Any updates to share?",
+    "Hello everyone, let's touch base! What's on your mind?",
+    "Time for our daily catch-up! What's new with you all?"
+]
 
-@router.message()
-async def ignore_messages(message):
-    pass  # Silently ignore all unhandled messages to reduce log clutter
+# Define scheduled tasks for messages and stickers
+# Replace 'sticker1', 'sticker2', etc., with actual Telegram sticker file IDs
+scheduled_tasks = [
+    {'time': time(13, 0), 'type': 'message'},  # 1:00 PM EAT
+    {'time': time(14, 0), 'type': 'message'},  # 2:00 PM EAT
+    {'time': time(15, 0), 'type': 'message'},  # 3:00 PM EAT
+    {'time': time(16, 0), 'type': 'message'},  # 4:00 PM EAT
+    {'time': time(10, 0), 'type': 'sticker', 'sticker_id': 'sticker1'},  # 10:00 AM EAT
+    {'time': time(12, 0), 'type': 'sticker', 'sticker_id': 'sticker2'},  # 12:00 PM EAT
+    {'time': time(17, 0), 'type': 'sticker', 'sticker_id': 'sticker3'},  # 5:00 PM EAT
+    {'time': time(19, 0), 'type': 'sticker', 'sticker_id': 'sticker4'}   # 7:00 PM EAT
+]
 
-# Asynchronous function to validate bot token
-async def validate_bot_token():
-    """Validate the bot token by making a test API call."""
-    try:
-        bot_info = await bot.get_me()
-        logger.info(f"Bot validated successfully: @{bot_info.username} (ID: {bot_info.id})")
-        return True
-    except TelegramUnauthorizedError as e:
-        logger.error(f"Invalid BOT_TOKEN: {e}. Please check the BOT_TOKEN in your .env file.")
-        return False
-    except Exception as e:
-        logger.error(f"Error validating bot token: {e}")
-        return False
+# Function to send scheduled content (messages or stickers)
+async def send_scheduled_content():
+    tz = pytz.timezone('Africa/Nairobi')  # EAT timezone
+    while True:
+        now = datetime.now(tz)
+        for task in scheduled_tasks:
+            target_time = task['time']
+            # Combine with today's date
+            target_datetime = datetime.combine(now.date(), target_time, tzinfo=tz)
+            # Calculate time difference in seconds
+            time_diff = abs((now - target_datetime).total_seconds())
+            if time_d⁶7iff < 60:  # Within a 1-minute window
+                if task['type'] == 'message':
+                    message = random.choice(MESSAGES)
+                    full_message = f"[{now.strftime('%H:%M:%S')} EAT] {message}"
+                    try:
+                        await bot.send_message(chat_id=CHAT_ID, text=full_message)
+                        logger.info(f"Message sent: {full_message}")
+                    except Exception as e:
+                        logger.error(f"Error sending message: {e}")
+                elif task['type'] == 'sticker':
+                    sticker_id = task['sticker_id']
+                    try:
+                        await bot.send_sticker(chat_id=CHAT_ID, sticker=sticker_id)
+                        logger.info(f"Sticker sent: {sticker_id}")
+                    except Exception as e:
+                        logger.error(f"Error sending sticker: {e}")
+                # Sleep for 60 seconds to avoid multiple sends in the same minute
+                await asyncio.sleep(60)
+        # Check every 30 seconds
+        await asyncio.sleep(30)
 
-# Asynchronous function to send scheduled message and sticker
-async def send_scheduled_message(time_str: str):
-    """Send a scheduled message and corresponding sticker to the private group."""
-    message = f"Good afternoon! Here's your {time_str} update."
-    sticker_id = sticker_ids[time_str]
-    try:
-        await bot.send_message(chat_id=TARGET_GROUP_ID, text=message)
-        await bot.send_sticker(chat_id=TARGET_GROUP_ID, sticker=sticker_id)
-        logger.info(f"Message and sticker sent for {time_str} EAT")
-    except TelegramUnauthorizedError as e:
-        logger.error(f"Unauthorized error sending message/sticker for {time_str}: {e}. Check BOT_TOKEN.")
-    except TelegramBadRequest as e:
-        logger.error(f"Bad request error sending message/sticker for {time_str}: {e}. Check TARGET_GROUP_ID or sticker IDs.")
-    except TelegramNetworkError as e:
-        logger.error(f"Network error sending message/sticker for {time_str}: {e}. Check internet connection.")
-    except Exception as e:
-        logger.error(f"Unexpected error sending message/sticker for {time_str}: {e}")
+# Handler for /start command to confirm bot is running
+@dp.message(commands=['start'])
+async def start_command(message: types.Message):
+    await message.reply(
+        "Bot is running and will send messages to the private group at 1:00 PM, 2:00 PM, 3:00 PM, and 4:00 PM EAT, "
+        "and stickers at 10:00 AM, 12:00 PM, 5:00 PM, and 7:00 PM EAT daily.")
 
-# Asynchronous function to log deployment server time every minute
-async def log_server_time():
-    """Log the current deployment server time internally every minute."""
-    now = datetime.now()
-    logger.info(f"{now} - Deployment Server Time Update")
-
+# Main execution
 async def main():
-    # Validate bot token before proceeding
-    if not await validate_bot_token():
-        logger.error("Bot token validation failed. Exiting.")
-        return
-
-    # Initialize scheduler with EAT timezone (UTC+3)
-    scheduler = AsyncIOScheduler(timezone='Africa/Addis_Ababa')
-
-    # Schedule daily messages for each time slot
-    for time_str in scheduled_times:
-        hour, minute = map(int, time_str.split(':'))
-        scheduler.add_job(
-            send_scheduled_message,
-            'cron',
-            hour=hour,
-            minute=minute,
-            args=[time_str],
-            misfire_grace_time=60  # Allow 60 seconds grace time for missed jobs
-        )
-
-    # Schedule server time logging every minute
-    scheduler.add_job(
-        log_server_time,
-        'interval',
-        minutes=1,
-        misfire_grace_time=30  # Allow 30 seconds grace time
-    )
-
-    # Start the scheduler
-    scheduler.start()
-    logger.info("Scheduler started with jobs for EAT messages and deployment server time logging")
-
-    # Start the bot polling
-    try:
-        await dp.start_polling(bot)
-    except Exception as e:
-        logger.error(f"Error during polling: {e}")
+    # Start the scheduled content task
+    asyncio.create_task(send_scheduled_content())
+    # Start polling
+    await dp.start_polling(bot)
 
 if __name__ == '__main__':
     asyncio.run(main())
-
