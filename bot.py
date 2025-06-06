@@ -84,6 +84,11 @@ async def start_command(message: types.Message):
         "and stickers at 10:00 AM, 12:00 PM, 5:00 PM, and 7:00 PM EAT daily.")
 
 # Main execution
-if __name__ == '__main__':
+async def main():
+    # Start the scheduled content task
     asyncio.ensure_future(send_scheduled_content())
-    dp.start_polling()
+    # Start polling
+    await dp.start_polling()
+
+if __name__ == '__main__':
+    asyncio.run(main())
